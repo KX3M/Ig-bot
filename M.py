@@ -47,6 +47,11 @@ async def set_prop(key, value):
 
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
+    # Token verification check
+    if message.text.startswith('/start verify_'):
+        await verify_token(message)
+        return
+
     user = users_col.find_one({'userId': message.from_user.id})
     if not user:
         users_col.insert_one({
@@ -54,22 +59,31 @@ async def cmd_start(message: types.Message):
             'name': message.from_user.first_name or 'NoName',
             'username': message.from_user.username or 'NoUsername'
         })
-        await bot.send_message(ADMIN_ID,
-            f"🆕 New user joined:\n\n• Name: {message.from_user.first_name or 'N/A'}\n• Username: @{message.from_user.username or 'N/A'}\n• ID: <code>{message.from_user.id}</code>")
+        await bot.send_message(
+            ADMIN_ID,
+            f"🆕 New user joined:\n\n"
+            f"• Name: {message.from_user.first_name or 'N/A'}\n"
+            f"• Username: @{message.from_user.username or 'N/A'}\n"
+            f"• ID: <code>{message.from_user.id}</code>"
+        )
 
     await message.answer(
         f"<b>Welcome {message.from_user.first_name or 'User'}!</b>\n\n"
         f"<b>Time to Clean Your Feed!</b>\n"
-        f"<i>Fake accounts, hate pages, bots all gone.\n\nSend any IG username, and get a solid report guide instantly!</i>\n\n"
+        f"<i>Fake accounts, hate pages, bots all gone.\n\n"
+        f"Send any IG username, and get a solid report guide instantly!</i>\n\n"
         f"<b>Use /meth To Generate Methods\nUse /report For Mass Reporting</b>\n\n"
         f"<blockquote>Powered by <a href='https://t.me/+V6ZWf2k9vV1kZmI1'>@PythonBotz</a></blockquote>",
         reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
-            [types.InlineKeyboardButton("Update", url="https://t.me/PythonBotz"),
-             types.InlineKeyboardButton("Support", url="https://t.me/offchats")]
+            [
+                types.InlineKeyboardButton("Update", url="https://t.me/PythonBotz"),
+                types.InlineKeyboardButton("Support", url="https://t.me/offchats")
+            ]
         ]),
         disable_web_page_preview=True
     )
 
+        
 @dp.message_handler(commands=['help'])
 async def cmd_help(message: types.Message):
     await message.answer(
@@ -200,7 +214,7 @@ async def cmd_meth(message: types.Message):
     if meth_count >= 3 and not has_access:
         token = str(time.time()).replace('.', '')[-10:]
         await set_prop(f"token_meth_{user_id}", {"token": token, "created": now})
-        verify_url = f"https://t.me/Qjiibot?start=verifyMeth_{user_id}_{token}"
+        verify_url = f"https://t.me/Qjiibot?start=verify_{user_id}_{token}"
 
         random_part = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
         alias = f"IGbot_{random_part}"
@@ -316,6 +330,19 @@ async def callback_handler(cb: types.CallbackQuery):
                                         [types.InlineKeyboardButton("ᴛᴀʀɢᴇᴛ ᴘʀᴏғɪʟᴇ", url=f"https://instagram.com/{username}")]
                                     ]))
 
+
+# /verify (via /start verify_)
+async def verify_token(message: types.Message):
+    parts = message.text.split("_")
+    if len(parts) != 3:
+        return await message.reply("❌ Invalid verify link.")
+    user_id, token = parts[1], parts[2]
+    token_data = await get_prop(f"token_{user_id}")
+    if token_data and token_data["token"] == token:
+        await set_prop(f"verified_{int(user_id)}", int(time.time() * 1000))
+        return await message.reply("✅ <b>Access Unlocked!</b>\n\nYou now have unlimited likes for 6 hours.")
+    else:
+        return await message.reply("❌ Invalid or expired token.")
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
