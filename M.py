@@ -2,6 +2,9 @@ import logging
 import random
 import asyncio
 import aiohttp
+import time
+import string
+import requests
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher import FSMContext
@@ -33,6 +36,14 @@ class FcastState(StatesGroup):
 
 async def is_admin(user_id):
     return user_id == ADMIN_ID
+
+# Helper functions for token and count storage (assuming a "props" collection)
+async def get_prop(key):
+    record = db.props.find_one({"key": key})
+    return record["value"] if record else None
+
+async def set_prop(key, value):
+    db.props.update_one({"key": key}, {"$set": {"value": value}}, upsert=True)
 
 @dp.message_handler(commands=['start'])
 async def cmd_start(message: types.Message):
@@ -170,6 +181,54 @@ async def cmd_meth(message: types.Message):
             "<u><b>Access Denied</b></u>\n\n<i>This command is for channel members only!</i>",
             reply_markup=markup
         )
+    
+    user_id = message.from_user.id
+    now = int(time.time() * 1000)
+
+    meth_count = await get_prop(f"meth_count_{user_id}") or 0
+    token_data = await get_prop(f"token_meth_{user_id}")
+
+    has_access = False
+    if token_data:
+        try:
+            token_created = token_data.get("created", 0)
+            if now - token_created < 6 * 60 * 60 * 1000:  # 6 hours
+                has_access = True
+        except Exception:
+            pass
+
+    if meth_count >= 3 and not has_access:
+        token = str(time.time()).replace('.', '')[-10:]
+        await set_prop(f"token_meth_{user_id}", {"token": token, "created": now})
+        verify_url = f"https://t.me/fflikes_Robot?start=verifyMeth_{user_id}_{token}"
+
+        random_part = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        alias = f"meth_{random_part}"
+
+        try:
+            res = requests.get(
+                f"https://arolinks.com/api?api=5ba1b9f950d09e04c0ff351012dacbbc2472641d"
+                f"&url={verify_url}&alias={alias}"
+            )
+            short = res.json().get("shortenedUrl") or verify_url
+        except:
+            short = verify_url
+
+        return await message.reply(
+            "🚫 <b>Your free meth limit has been reached!</b>\n\n"
+            "🔓 You can unlock 6 hours of free access by completing a simple verification.\n\n"
+            "💎 Or upgrade to Premium for unlimited access and faster delivery.\n\n"
+            "👇 Choose an option below:",
+            reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
+                [types.InlineKeyboardButton("🔓 Unlock Free Access", url=short)],
+                [types.InlineKeyboardButton("💎 Buy Premium", callback_data="premium"),
+                 types.InlineKeyboardButton("ℹ️ Tutorial", url="https://t.me/ChipsTutorial/8")]
+            ])
+        )
+
+    if not has_access:
+        await set_prop(f"meth_count_{user_id}", meth_count + 1)
+
     await message.answer("<b>Please Send Your Target Username Without @</b>")
     await MethState.username.set()
 
@@ -257,7 +316,8 @@ async def callback_handler(cb: types.CallbackQuery):
                                         [types.InlineKeyboardButton("ᴛᴀʀɢᴇᴛ ᴘʀᴏғɪʟᴇ", url=f"https://instagram.com/{username}")]
                                     ]))
 
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     executor.start_polling(dp, skip_updates=True)
-  
+    
