@@ -344,6 +344,58 @@ async def verify_token(message: types.Message):
     else:
         return await message.reply("❌ Invalid or expired token.")
 
+        
+# Admin: Give Premium Command
+@dp.message_handler(commands=['givepremium'])
+async def give_premium(message: types.Message):
+    if message.from_user.id not in ADMIN_IDS:
+        return await message.reply("❌ You are not authorized to use this command.")
+
+    args = message.text.split()
+    if len(args) != 3 or not args[1].isdigit() or not args[2].isdigit():
+        return await message.reply("⚠️ Format: /givepremium <user_id> <hours>")
+
+    user_id = int(args[1])
+    hours = int(args[2])
+    expiry = int(time.time() * 1000) + hours * 60 * 60 * 1000
+
+    await set_prop(f"premium_{user_id}", {"until": expiry})
+    await message.reply(f"✅ Premium given to <code>{user_id}</code> for {hours} hours.")
+
+# Premium Plans Popup
+@dp.callback_query_handler(lambda c: c.data == "premium")
+async def buy_premium(query: types.CallbackQuery):
+    sent = await query.message.reply_photo(
+        photo="https://graph.org/file/ac61481c6c90015545d83-6b573a858fa21d40c6.jpg",
+        caption=message_content.format(first=query.from_user.mention),
+        reply_markup=InlineKeyboardMarkup(inline_keyboard=[
+            [
+                InlineKeyboardButton("Owner", url="https://t.me/metaui"),
+                InlineKeyboardButton("Channel", url="https://t.me/Pythonbotz")
+            ],
+            [
+                InlineKeyboardButton("🔒 Close", callback_data="close")
+            ]
+        ])
+    )
+
+    # 🕒 Wait 60 seconds and auto-delete
+    await asyncio.sleep(60)
+    try:
+        await sent.delete()
+    except:
+        pass  # Ignore if already deleted manually
+
+
+# Close inline messages
+@dp.callback_query_handler(lambda c: c.data == "close")
+async def close_cb(query: types.CallbackQuery):
+    await query.message.delete()
+    try:
+        await query.message.reply_to_message.delete()
+    except: pass
+
+
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     executor.start_polling(dp, skip_updates=True)
