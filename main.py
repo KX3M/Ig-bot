@@ -67,20 +67,17 @@ async def cmd_start(message: types.Message):
             f"• ID: <code>{message.from_user.id}</code>"
         )
 
-    await message.answer(
-        f"<b>Welcome {message.from_user.first_name or 'User'}!</b>\n\n"
-        f"<b>Time to Clean Your Feed!</b>\n"
-        f"<i>Fake accounts, hate pages, bots all gone.\n\n"
-        f"Send any IG username, and get a solid report guide instantly!</i>\n\n"
-        f"<b>Use /meth To Generate Methods\nUse /report For Mass Reporting</b>\n\n"
-        f"<blockquote>Powered by <a href='https://t.me/+V6ZWf2k9vV1kZmI1'>@PythonBotz</a></blockquote>",
+    await query.message.reply_photo(
+        photo="https://graph.org/file/ac61481c6c90015545d83-6b573a858fa21d40c6.jpg",
+        caption=message_content.format(first=query.from_user.mention),
+        
         reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
             [
                 types.InlineKeyboardButton("Update", url="https://t.me/PythonBotz"),
                 types.InlineKeyboardButton("Support", url="https://t.me/offchats")
             ]
         ]),
-        disable_web_page_preview=True
+        disable_web_page_preview=false
     )
 
         
