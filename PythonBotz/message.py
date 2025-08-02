@@ -1,4 +1,4 @@
-CHANNEL_ID = '@Drsudo'
+
 DEV_USERNAME = '@metaui'
 
 # UPI Premium Message
