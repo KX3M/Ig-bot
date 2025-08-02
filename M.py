@@ -200,10 +200,10 @@ async def cmd_meth(message: types.Message):
     if meth_count >= 3 and not has_access:
         token = str(time.time()).replace('.', '')[-10:]
         await set_prop(f"token_meth_{user_id}", {"token": token, "created": now})
-        verify_url = f"https://t.me/fflikes_Robot?start=verifyMeth_{user_id}_{token}"
+        verify_url = f"https://t.me/Qjiibot?start=verifyMeth_{user_id}_{token}"
 
         random_part = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
-        alias = f"meth_{random_part}"
+        alias = f"IGbot_{random_part}"
 
         try:
             res = requests.get(
@@ -221,7 +221,7 @@ async def cmd_meth(message: types.Message):
             "👇 Choose an option below:",
             reply_markup=types.InlineKeyboardMarkup(inline_keyboard=[
                 [types.InlineKeyboardButton("🔓 Unlock Free Access", url=short)],
-                [types.InlineKeyboardButton("💎 Buy Premium", callback_data="premium"),
+                [
                  types.InlineKeyboardButton("ℹ️ Tutorial", url="https://t.me/ChipsTutorial/8")]
             ])
         )
